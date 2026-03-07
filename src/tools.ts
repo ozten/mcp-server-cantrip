@@ -132,6 +132,17 @@ export const tools: ToolDef[] = [
     },
   },
 
+  // ── Project List ──
+  {
+    name: "cantrip_project_list",
+    description:
+      "List all projects in the current team. Returns an array of projects with id, slug, display_name, description, created_at, and updated_at.",
+    shape: {},
+    handler: async () => {
+      return postCantrip("project list", [], {});
+    },
+  },
+
   // ── Snapshot ──
   {
     name: "cantrip_snapshot",
