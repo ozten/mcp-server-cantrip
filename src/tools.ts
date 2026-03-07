@@ -261,6 +261,31 @@ export const tools: ToolDef[] = [
       postCantrip("history", [], buildFlags({ type: p.type, entity: p.entity, since: p.since, limit: p.limit })),
   },
 
+  // ── Billing ──
+  {
+    name: "cantrip_billing_balance",
+    description:
+      "Check your remaining credit balance. Shows available credits, reserved credits (held by in-progress operations), and total balance.",
+    shape: {},
+    handler: async () => postCantrip("billing", ["balance"], {}),
+  },
+  {
+    name: "cantrip_billing_history",
+    description:
+      "View recent credit transactions. Shows purchases, usage debits, and running balance. Use limit to control how many entries to return.",
+    shape: {
+      limit: z.number().optional().describe("Maximum entries to return (default: 20)"),
+    },
+    handler: async (p) => postCantrip("billing", ["history"], buildFlags({ limit: p.limit })),
+  },
+  {
+    name: "cantrip_billing_tiers",
+    description:
+      "View available credit packs and pricing tiers. Shows tier name, price, and credit amount for each pack.",
+    shape: {},
+    handler: async () => postCantrip("billing", ["tiers"], {}),
+  },
+
   // ── Entity CRUD ──
   {
     name: "cantrip_entity_add",
