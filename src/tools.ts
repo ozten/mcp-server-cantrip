@@ -75,28 +75,30 @@ export const tools: ToolDef[] = [
   {
     name: "cantrip_status",
     description:
-      "Check daemon health, API key, and current project. " +
-      "Returns daemon reachability, whether an API key is configured, and the active project from .cantrip.json.",
+      "Check daemon health, authentication, and current project. " +
+      "Returns daemon reachability, authenticated identity (user, team), and the active project from .cantrip.json.",
     shape: {},
     handler: async () => {
       const project = readProjectContext();
       const apiKeyConfigured = !!process.env.CANTRIP_API_KEY;
       try {
-        const result = await postCantrip("snapshot", [], {});
+        const whoami = await postCantrip("whoami", [], {});
         return {
           status: "ok",
           daemon: "reachable",
           api_key_configured: apiKeyConfigured,
           current_project: project ?? "none",
-          snapshot: result,
+          identity: whoami,
         };
       } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        const daemonUnreachable = message.startsWith("Cannot reach cantrip daemon");
         return {
           status: "error",
-          daemon: "unreachable",
+          daemon: daemonUnreachable ? "unreachable" : "reachable",
           api_key_configured: apiKeyConfigured,
           current_project: project ?? "none",
-          message: err instanceof Error ? err.message : String(err),
+          message,
         };
       }
     },
@@ -147,11 +149,11 @@ export const tools: ToolDef[] = [
   {
     name: "cantrip_snapshot",
     description:
-      "Get project state at three levels of detail. " +
-      "No args: project overview with counts per entity type by review state, gaps, review queue size. " +
-      "entity_type only: list all entities of that type. " +
-      "entity_type + entity_id: full detail for one entity. " +
-      "This is the single tool for browsing project data — use it instead of listing or showing entities separately.",
+      "Browse project data at three zoom levels. " +
+      "No args: project overview with entity counts by type and review state, gaps, and review queue size. " +
+      "entity_type only: list all entities of that type (e.g. 'icps', 'pain-points', 'channels'). " +
+      "entity_type + entity_id: show full detail for one entity. " +
+      "This is the primary tool for listing and inspecting entities.",
     shape: {
       entity_type: z
         .string()
@@ -203,7 +205,7 @@ export const tools: ToolDef[] = [
   },
   {
     name: "cantrip_review_dismiss",
-    description: "Dismiss an escalation without resolving it",
+    description: "Dismiss an open escalation without resolving it",
     shape: {
       id: z.string().describe("Escalation ID"),
     },
@@ -233,15 +235,13 @@ export const tools: ToolDef[] = [
   {
     name: "cantrip_next_run",
     description:
-      "Not yet available. Use cantrip_next_prompt instead to get a context-rich prompt you can execute yourself.",
+      "Execute an enrichment opportunity with AI. Runs the LLM-powered enrichment inline — " +
+      "either updating existing entities' missing fields (targeted) or generating new entities (bulk). " +
+      "Returns when complete with a summary of what was created or updated.",
     shape: {
       id: z.string().describe("Opportunity ID from cantrip_next"),
     },
-    handler: async () => ({
-      status: "unavailable",
-      message:
-        "next_run is not yet available. Use cantrip_next_prompt to get a context-rich prompt you can execute yourself.",
-    }),
+    handler: async (p) => postCantrip("next run", [String(p.id)], {}),
   },
 
   // ── History ──
@@ -261,29 +261,29 @@ export const tools: ToolDef[] = [
       postCantrip("history", [], buildFlags({ type: p.type, entity: p.entity, since: p.since, limit: p.limit })),
   },
 
-  // ── Billing ──
+  // ── Meter ──
   {
-    name: "cantrip_billing_balance",
+    name: "cantrip_meter_balance",
     description:
-      "Check your remaining credit balance. Shows available credits, reserved credits (held by in-progress operations), and total balance.",
+      "Check remaining credits. Returns available credits, reserved credits (held by in-progress operations), and total balance.",
     shape: {},
-    handler: async () => postCantrip("billing", ["balance"], {}),
+    handler: async () => postCantrip("meter", ["balance"], {}),
   },
   {
-    name: "cantrip_billing_history",
+    name: "cantrip_meter_history",
     description:
-      "View recent credit transactions. Shows purchases, usage debits, and running balance. Use limit to control how many entries to return.",
+      "View recent credit transactions. Shows usage debits, purchases, and running balance.",
     shape: {
       limit: z.number().optional().describe("Maximum entries to return (default: 20)"),
     },
-    handler: async (p) => postCantrip("billing", ["history"], buildFlags({ limit: p.limit })),
+    handler: async (p) => postCantrip("meter", ["history"], buildFlags({ limit: p.limit })),
   },
   {
-    name: "cantrip_billing_tiers",
+    name: "cantrip_meter_tiers",
     description:
-      "View available credit packs and pricing tiers. Shows tier name, price, and credit amount for each pack.",
+      "View available credit packs. Shows tier name, credits included, and price.",
     shape: {},
-    handler: async () => postCantrip("billing", ["tiers"], {}),
+    handler: async () => postCantrip("meter", ["tiers"], {}),
   },
 
   // ── Entity CRUD ──
@@ -292,13 +292,13 @@ export const tools: ToolDef[] = [
     description:
       "Create a new entity. Automatically marked as 'accepted'. " +
       "Fields vary by type:\n" +
-      "- icp: name, description, demographics, jobs_to_be_done, willingness_to_pay\n" +
+      "- icp: name, description, demographics, jobs_to_be_done, willingness_to_pay, current_alternatives, priority, is_beachhead\n" +
       "- pain_point: description, severity, frequency, evidence\n" +
       "- value_prop: framing (use instead of name), tagline, evidence\n" +
-      "- channel: name, channel_type, lifecycle_stage, cac\n" +
-      "- experiment: title (use instead of name), hypothesis, description\n" +
-      "- competitor: name, description, url, positioning, strengths, weaknesses\n" +
-      "- contact: name, email, company, role\n" +
+      "- channel: name, description, channel_type, lifecycle_stage, cac, estimated_reach, conversion_rate\n" +
+      "- experiment: title (use instead of name), hypothesis, description, status, success_metrics, outcome_notes\n" +
+      "- competitor: name, description, url, positioning, strengths, weaknesses, pricing_model\n" +
+      "- contact: name, email, phone, company, role, source, url, notes\n" +
       "Extra fields are stored in extensions. " +
       "After adding entities, pause and confirm with the user before adding more.",
     shape: {
