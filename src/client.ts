@@ -2,7 +2,7 @@ import type { CantripRequest, CantripResponse } from "./types.js";
 import { readFileSync, writeFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 
-const DEFAULT_URL = "http://127.0.0.1:9876";
+const DEFAULT_URL = "https://api.cantrip.ai";
 const CONFIG_FILE = ".cantrip.json";
 
 export function getDaemonUrl(): string {
@@ -70,8 +70,8 @@ export async function postCantrip(
     res = await fetch(url, { method: "POST", headers, body: JSON.stringify(body) });
   } catch (err) {
     throw new Error(
-      `Cannot reach cantrip daemon at ${getDaemonUrl()}. ` +
-        `Is it running? Start it with: cantrip serve\n` +
+      `Cannot reach Cantrip API at ${getDaemonUrl()}. ` +
+        `Check your network connection and CANTRIP_API_KEY.\n` +
         `(${err instanceof Error ? err.message : String(err)})`,
     );
   }

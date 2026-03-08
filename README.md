@@ -12,15 +12,6 @@ Agent (Claude, etc.) ── MCP protocol (stdio) ──> mcp-server-cantrip ─�
 
 The MCP server is a thin translation layer. It converts MCP tool calls into `{command, args, flags}` JSON envelopes and POSTs them to the cantrip daemon. Zero business logic — identical contract to the CLI and React UI.
 
-## Prerequisites
-
-The cantrip daemon must be running:
-
-```bash
-cantrip serve
-# Listening on 127.0.0.1:9876
-```
-
 ## Installation
 
 ```bash
@@ -76,7 +67,7 @@ Add to `~/.claude/mcp.json` globally:
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `CANTRIP_API_KEY` | *(none)* | Your Cantrip API key |
-| `CANTRIP_URL` | `http://127.0.0.1:9876` | Cantrip daemon URL |
+| `CANTRIP_URL` | `https://api.cantrip.ai` | Cantrip API URL (override for self-hosted) |
 
 ### Project Context (`.cantrip.json`)
 
@@ -136,7 +127,7 @@ Supported entity types: `icp`, `pain_point`, `value_prop`, `experiment`, `channe
 ## Development
 
 ```bash
-git clone https://github.com/pact-sh/mcp-server-cantrip.git
+git clone https://github.com/ozten/mcp-server-cantrip.git
 cd mcp-server-cantrip
 npm install
 npm run build

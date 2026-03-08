@@ -47,4 +47,4 @@ npm run build   # TypeScript compilation
 ## Environment
 
 - `CANTRIP_API_KEY` — API key (sent as Bearer token)
-- `CANTRIP_URL` — daemon URL (default: http://127.0.0.1:9876)
+- `CANTRIP_URL` — API URL (default: https://api.cantrip.ai)
