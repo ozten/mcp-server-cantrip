@@ -205,9 +205,12 @@ export const tools: ToolDef[] = [
   },
   {
     name: "cantrip_review_dismiss",
-    description: "Dismiss an open escalation without resolving it",
+    description:
+      "Dismiss an inferred entity or open escalation. " +
+      "For entities: removes from review queue without accepting or rejecting (kept for history). " +
+      "For escalations: closes without resolving.",
     shape: {
-      id: z.string().describe("Escalation ID"),
+      id: z.string().describe("Entity or escalation ID to dismiss"),
     },
     handler: async (p) => postCantrip("review dismiss", [String(p.id)], {}),
   },
