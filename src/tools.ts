@@ -134,14 +134,32 @@ export const tools: ToolDef[] = [
     },
   },
 
-  // ── Project List ──
+  // ── Project Management ──
   {
-    name: "cantrip_project_list",
+    name: "cantrip_project",
     description:
-      "List all projects in the current team. Returns an array of projects with id, slug, display_name, description, created_at, and updated_at.",
-    shape: {},
-    handler: async () => {
-      return postCantrip("project list", [], {});
+      "Manage projects. Actions:\n" +
+      "- list (default): List all projects in the current team.\n" +
+      "- update: Update a project's name or description. Uses the connected project unless 'slug' is provided.\n" +
+      "- delete: Delete a project and all its data. Uses the connected project unless 'slug' is provided.",
+    shape: {
+      action: z
+        .enum(["list", "update", "delete"])
+        .optional()
+        .describe("Action to perform (default: list)"),
+      slug: z
+        .string()
+        .optional()
+        .describe("Project slug to target. Defaults to the connected project from .cantrip.json."),
+      name: z.string().optional().describe("New display name (update only)"),
+      description: z.string().optional().describe("New description (update only)"),
+    },
+    handler: async (p) => {
+      const action = (p.action as string) ?? "list";
+      const args: string[] = [];
+      if (p.slug) args.push(String(p.slug));
+      const flags = buildFlags({ name: p.name, description: p.description });
+      return postCantrip(`project ${action}`, args, flags);
     },
   },
 
