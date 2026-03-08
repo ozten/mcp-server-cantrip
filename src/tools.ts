@@ -238,7 +238,8 @@ export const tools: ToolDef[] = [
     name: "cantrip_next",
     description:
       "List gap-analysis opportunities — things that would move the project closer to ideal state. " +
-      "Each opportunity has an ID you can pass to cantrip_next_prompt or cantrip_next_run. " +
+      "Each opportunity has a stable UUID that you can pass to cantrip_next_prompt or cantrip_next_run. " +
+      "Opportunities persist across calls; re-running gap analysis updates existing opportunities rather than replacing them. " +
       "Review the project snapshot with the user before running opportunities.",
     shape: {},
     handler: async () => postCantrip("next", [], {}),
@@ -247,7 +248,7 @@ export const tools: ToolDef[] = [
     name: "cantrip_next_prompt",
     description:
       "Generate a context-rich LLM prompt for an opportunity. " +
-      "Returns a ready-to-use prompt with all relevant ontology context baked in. Zero cost.",
+      "Returns a ready-to-use prompt with all relevant ontology context baked in. Zero credit cost.",
     shape: {
       id: z.string().describe("Opportunity ID from cantrip_next"),
     },
@@ -258,7 +259,9 @@ export const tools: ToolDef[] = [
     description:
       "Execute an enrichment opportunity with AI. Runs the LLM-powered enrichment inline — " +
       "either updating existing entities' missing fields (targeted) or generating new entities (bulk). " +
-      "Returns when complete with a summary of what was created or updated.",
+      "Returns when complete with a summary of what was created or updated. " +
+      "Parallelism: you may run different loop types concurrently (e.g. enrich ICPs + enrich competitors), " +
+      "but the daemon blocks concurrent runs of the same loop type for safety.",
     shape: {
       id: z.string().describe("Opportunity ID from cantrip_next"),
     },
@@ -317,7 +320,7 @@ export const tools: ToolDef[] = [
       "- pain_point: description, severity, frequency, evidence\n" +
       "- value_prop: framing (use instead of name), tagline, evidence\n" +
       "- channel: name, description, channel_type, lifecycle_stage, cac, estimated_reach, conversion_rate\n" +
-      "- experiment: title (use instead of name), hypothesis, description, status, success_metrics, outcome_notes\n" +
+      "- experiment: title (use instead of name), hypothesis, description, status, success_metrics, outcome_notes, value_prop_id, channel_id\n" +
       "- competitor: name, description, url, positioning, strengths, weaknesses, pricing_model\n" +
       "- contact: name, email, phone, company, role, source, url, notes\n" +
       "Extra fields are stored in extensions. " +
