@@ -109,7 +109,8 @@ export const tools: ToolDef[] = [
     name: "cantrip_init",
     description:
       "Create a new project and connect this workspace to it. " +
-      "Optionally ingests a product brief to extract ICPs, pain points, and value props as inferred entities. " +
+      "Pass 'brief' (absolute file path to a text/markdown product brief) to auto-extract ICPs, pain points, and value props as inferred entities (costs 5 credits). " +
+      "Without a brief, the project is created empty (free) and you add entities manually. " +
       "Writes .cantrip.json automatically after creation. " +
       "After creating a project, add a few entities and confirm them with the user before going deeper.",
     shape: {
@@ -317,13 +318,13 @@ export const tools: ToolDef[] = [
       "Create a new entity. Automatically marked as 'accepted'. " +
       "Fields vary by type:\n" +
       "- icp: name, description, demographics, jobs_to_be_done, willingness_to_pay, current_alternatives, priority, is_beachhead\n" +
-      "- pain_point: description, severity, frequency, evidence\n" +
-      "- value_prop: framing (use instead of name), tagline, evidence\n" +
-      "- channel: name, description, channel_type, lifecycle_stage, cac, estimated_reach, conversion_rate\n" +
-      "- experiment: title (use instead of name), hypothesis, description, status, success_metrics, outcome_notes, value_prop_id, channel_id\n" +
+      "- pain_point: description, severity (low|medium|high|critical), frequency (rare|occasional|frequent|constant), evidence\n" +
+      "- value_prop: framing (required — use instead of 'name'; 'description' is stored in extensions), tagline, evidence\n" +
+      "- channel: name, channel_type, lifecycle_stage (exploring|testing|scaling|maintaining|killed), cac, estimated_reach, conversion_rate (note: 'description' maps to 'notes' column)\n" +
+      "- experiment: title (required — use instead of 'name'), hypothesis, description, status (proposed|designed|active|completed|analyzed|abandoned), success_metrics, outcome_notes, value_prop_id, channel_id\n" +
       "- competitor: name, description, url, positioning, strengths, weaknesses, pricing_model\n" +
       "- contact: name, email, phone, company, role, source, url, notes\n" +
-      "Extra fields are stored in extensions. " +
+      "Extra fields (any field not in the schema above) are stored in extensions. " +
       "After adding entities, pause and confirm with the user before adding more.",
     shape: {
       entity_type: entityTypeSchema,
