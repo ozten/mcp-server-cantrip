@@ -5,8 +5,11 @@ import { join } from "node:path";
 const DEFAULT_URL = "https://api.cantrip.ai";
 const CONFIG_FILE = ".cantrip.json";
 
-export function getDaemonUrl(): string {
-  return process.env.CANTRIP_URL ?? DEFAULT_URL;
+// ── Config interface ─────────────────────────────────────────────────
+
+export interface CantripClientConfig {
+  apiKey: string;
+  apiUrl?: string;
 }
 
 // ── Project context (.cantrip.json) ────────────────────────────────
@@ -36,49 +39,64 @@ export function writeProjectContext(project: string): void {
 
 // ── HTTP client ────────────────────────────────────────────────────
 
-/**
- * POST a command envelope to the cantrip daemon.
- * Automatically injects:
- *  - project from .cantrip.json (if not already in flags)
- *  - Authorization header from CANTRIP_API_KEY
- */
-export async function postCantrip(
-  command: string,
-  args: string[] = [],
-  flags: Record<string, string> = {},
-): Promise<CantripResponse> {
-  const url = `${getDaemonUrl()}/api/cantrip`;
+export class CantripClient {
+  private apiKey: string;
+  private apiUrl: string;
 
-  // Inject project from .cantrip.json if not provided
-  if (!flags.project) {
-    const project = readProjectContext();
-    if (project) flags.project = project;
+  constructor(config: CantripClientConfig) {
+    this.apiKey = config.apiKey;
+    this.apiUrl = config.apiUrl ?? DEFAULT_URL;
   }
 
-  const body: CantripRequest = { command, args, flags };
-
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-  };
-  const apiKey = process.env.CANTRIP_API_KEY;
-  if (apiKey) {
-    headers["Authorization"] = `Bearer ${apiKey}`;
+  get url(): string {
+    return this.apiUrl;
   }
 
-  let res: Response;
-  try {
-    res = await fetch(url, { method: "POST", headers, body: JSON.stringify(body) });
-  } catch (err) {
-    throw new Error(
-      `Cannot reach Cantrip API at ${getDaemonUrl()}. ` +
-        `Check your network connection and CANTRIP_API_KEY.\n` +
-        `(${err instanceof Error ? err.message : String(err)})`,
-    );
+  get hasApiKey(): boolean {
+    return !!this.apiKey;
   }
 
-  const json = (await res.json()) as CantripResponse;
-  if ("error" in json && typeof json.error === "string") {
-    throw new Error(`cantrip error: ${json.error}`);
+  /**
+   * POST a command envelope to the cantrip daemon.
+   * Automatically injects project from .cantrip.json (if not already in flags).
+   */
+  async post(
+    command: string,
+    args: string[] = [],
+    flags: Record<string, string> = {},
+  ): Promise<CantripResponse> {
+    const url = `${this.apiUrl}/api/cantrip`;
+
+    // Inject project from .cantrip.json if not provided
+    if (!flags.project) {
+      const project = readProjectContext();
+      if (project) flags.project = project;
+    }
+
+    const body: CantripRequest = { command, args, flags };
+
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+    if (this.apiKey) {
+      headers["Authorization"] = `Bearer ${this.apiKey}`;
+    }
+
+    let res: Response;
+    try {
+      res = await fetch(url, { method: "POST", headers, body: JSON.stringify(body) });
+    } catch (err) {
+      throw new Error(
+        `Cannot reach Cantrip API at ${this.apiUrl}. ` +
+          `Check your network connection and CANTRIP_API_KEY.\n` +
+          `(${err instanceof Error ? err.message : String(err)})`,
+      );
+    }
+
+    const json = (await res.json()) as CantripResponse;
+    if ("error" in json && typeof json.error === "string") {
+      throw new Error(`cantrip error: ${json.error}`);
+    }
+    return json;
   }
-  return json;
 }
