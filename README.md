@@ -67,7 +67,6 @@ Add to `~/.claude/mcp.json` globally:
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `CANTRIP_API_KEY` | *(none)* | Your Cantrip API key |
-| `CANTRIP_URL` | `https://api.cantrip.ai` | Cantrip API URL (override for self-hosted) |
 
 ### Project Context (`.cantrip.json`)
 
@@ -123,16 +122,6 @@ This file is created automatically by `cantrip_init` (new project) or `cantrip_c
 | `cantrip_entity_edit` | Edit an existing entity |
 
 Supported entity types: `icp`, `pain_point`, `value_prop`, `experiment`, `channel`, `competitor`, `contact`
-
-## Development
-
-```bash
-git clone https://github.com/ozten/mcp-server-cantrip.git
-cd mcp-server-cantrip
-npm install
-npm run build
-npm start
-```
 
 ## License
 

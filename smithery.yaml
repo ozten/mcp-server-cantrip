@@ -7,16 +7,12 @@ startCommand:
     properties:
       cantripApiKey:
         type: string
-        description: "Cantrip API key"
-      cantripUrl:
-        type: string
-        description: "Cantrip API URL (default: https://api.cantrip.ai)"
+        description: "Cantrip API key from https://dashboard.cantrip.ai"
   commandFunction: |
     (config) => ({
       command: 'npx',
       args: ['-y', 'mcp-server-cantrip'],
       env: {
-        CANTRIP_API_KEY: config.cantripApiKey,
-        CANTRIP_URL: config.cantripUrl ?? ''
+        CANTRIP_API_KEY: config.cantripApiKey
       }
     })

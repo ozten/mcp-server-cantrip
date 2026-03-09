@@ -2,11 +2,7 @@ import { z } from "zod";
 import { createCantripServer } from "./server.js";
 
 export const configSchema = z.object({
-  cantripApiKey: z.string().describe("Cantrip API key"),
-  cantripUrl: z
-    .string()
-    .optional()
-    .describe("Cantrip API URL (default: https://api.cantrip.ai)"),
+  cantripApiKey: z.string().describe("Cantrip API key from https://dashboard.cantrip.ai"),
 });
 
 export default function createServer({
@@ -16,6 +12,5 @@ export default function createServer({
 }) {
   return createCantripServer({
     apiKey: config.cantripApiKey,
-    apiUrl: config.cantripUrl,
   }).server;
 }
