@@ -38,6 +38,13 @@ Every tool handler is ~5 lines: validate params -> build `{command, args, flags}
 3. Implement `handler` that calls `postCantrip(command, args, flags)`
 4. The registration loop in `index.ts` picks it up automatically
 
+## Versioning & Releases
+
+- **Single source of truth**: `package.json` holds the version. `src/index.ts` imports it at runtime via `createRequire`. Never hardcode a version string elsewhere.
+- **Bump before publish**: Always bump the version before `npm publish`. Use `./scripts/release.sh [patch|minor|major]` (default: patch).
+- **What the script does**: checks for clean working tree, runs `npm version`, builds, commits, and tags. It prints the `git push` and `npm publish` commands for you to run manually.
+- **Current convention**: patch bumps (`1.0.x`) for fixes and new tools. Minor/major for breaking changes or large features.
+
 ## Quality Gates
 
 ```bash

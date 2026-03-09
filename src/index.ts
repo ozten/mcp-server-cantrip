@@ -1,13 +1,17 @@
 #!/usr/bin/env node
 
+import { createRequire } from "module";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { tools } from "./tools.js";
 import { getDaemonUrl } from "./client.js";
 
+const require = createRequire(import.meta.url);
+const { version } = require("../package.json");
+
 const server = new McpServer({
   name: "mcp-server-cantrip",
-  version: "0.1.0",
+  version,
 });
 
 // Register all tools using v1 API: server.tool(name, description, shape, handler)
