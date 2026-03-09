@@ -109,24 +109,34 @@ export const tools: ToolDef[] = [
     name: "cantrip_init",
     description:
       "Create a new project and connect this workspace to it. " +
-      "Pass 'brief' (absolute file path to a text/markdown product brief) to auto-extract ICPs, pain points, and value props as inferred entities (costs 5 credits). " +
+      "Pass 'brief_text' (product brief as text) to auto-extract ICPs, pain points, and value props as inferred entities (costs 5 credits). " +
+      "Or pass 'brief_path' (absolute file path) and the file will be read locally. " +
       "Without a brief, the project is created empty (free) and you add entities manually. " +
       "Writes .cantrip.json automatically after creation. " +
       "After creating a project, add a few entities and confirm them with the user before going deeper.",
     shape: {
       name: z.string().describe("Project name"),
       description: z.string().describe("One-line project description"),
-      brief: z
+      brief_text: z
         .string()
         .optional()
-        .describe("Absolute path to a product brief file (text or markdown)"),
+        .describe("Product brief content as text (preferred)"),
+      brief_path: z
+        .string()
+        .optional()
+        .describe("Absolute path to a product brief file — will be read locally and sent as text"),
     },
     handler: async (p) => {
       const slug = String(p.name).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+      let briefText = p.brief_text;
+      if (!briefText && p.brief_path) {
+        const { readFileSync } = await import("fs");
+        briefText = readFileSync(String(p.brief_path), "utf-8");
+      }
       const flags = buildFlags({
         name: p.name,
         description: p.description,
-        brief: p.brief,
+        brief_text: briefText,
         project: slug,
       });
       const result = await postCantrip("init", [], flags);
