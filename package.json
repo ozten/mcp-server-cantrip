@@ -1,6 +1,6 @@
 {
   "name": "mcp-server-cantrip",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "MCP server for Cantrip — AI-powered GTM engine for solo founders",
   "type": "module",
   "bin": {
@@ -20,7 +20,12 @@
     "start": "node dist/index.js",
     "inspect": "npx @modelcontextprotocol/inspector node dist/index.js"
   },
-  "keywords": ["mcp", "cantrip", "gtm", "ai"],
+  "keywords": [
+    "mcp",
+    "cantrip",
+    "gtm",
+    "ai"
+  ],
   "license": "MIT",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.12.1",
