@@ -77,11 +77,65 @@ export function createTools(client: CantripClient): ToolDef[] {
       name: "cantrip_status",
       description:
         "Check daemon health, authentication, and current project. " +
-        "Returns daemon reachability, authenticated identity (user, team), and the active project from .cantrip.json.",
+        "Returns daemon reachability, authenticated identity (user, team), and the active project from .cantrip.json. " +
+        "When CANTRIP_API_KEY is missing, returns setup instructions with config examples for common MCP clients.",
       shape: {},
       handler: async () => {
         const project = readProjectContext();
         const apiKeyConfigured = client.hasApiKey;
+
+        if (!apiKeyConfigured) {
+          return {
+            status: "setup_required",
+            api_key_configured: false,
+            current_project: project ?? "none",
+            message: "CANTRIP_API_KEY is not configured. The user needs to add it to their MCP server config.",
+            setup: {
+              step_1: "Sign up at https://cantrip.ai and copy your API key",
+              step_2: "Add CANTRIP_API_KEY to your MCP server configuration (see examples below)",
+              step_3: "Restart your MCP client to pick up the new config",
+              examples: {
+                claude_desktop: {
+                  file: "~/Library/Application Support/Claude/claude_desktop_config.json (macOS) or %APPDATA%/Claude/claude_desktop_config.json (Windows)",
+                  config: {
+                    mcpServers: {
+                      cantrip: {
+                        command: "npx",
+                        args: ["-y", "mcp-server-cantrip"],
+                        env: { CANTRIP_API_KEY: "your-key-here" },
+                      },
+                    },
+                  },
+                },
+                claude_code: {
+                  file: ".mcp.json in project root",
+                  config: {
+                    mcpServers: {
+                      cantrip: {
+                        command: "npx",
+                        args: ["-y", "mcp-server-cantrip"],
+                        env: { CANTRIP_API_KEY: "your-key-here" },
+                      },
+                    },
+                  },
+                },
+                cursor: {
+                  file: ".cursor/mcp.json in project root",
+                  config: {
+                    mcpServers: {
+                      cantrip: {
+                        command: "npx",
+                        args: ["-y", "mcp-server-cantrip"],
+                        env: { CANTRIP_API_KEY: "your-key-here" },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          };
+        }
+
         try {
           const whoami = await client.post("whoami", [], {});
           return {

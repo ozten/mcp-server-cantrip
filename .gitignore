@@ -1,1 +1,3 @@
-node_modules/\ndist/\n*.tsbuildinfo
+node_modules/
+dist/
+*.tsbuildinfo

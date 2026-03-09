@@ -95,7 +95,15 @@ export class CantripClient {
 
     const json = (await res.json()) as CantripResponse;
     if ("error" in json && typeof json.error === "string") {
-      throw new Error(`cantrip error: ${json.error}`);
+      let message = json.error;
+      if (/insufficient credits/i.test(message)) {
+        message += "\n\nPurchase credits at https://cantrip.ai";
+      }
+      if (/not authenticated/i.test(message) || /unauthorized/i.test(message)) {
+        message +=
+          "\n\nSet CANTRIP_API_KEY in your MCP server config. Get a key at https://cantrip.ai";
+      }
+      throw new Error(`cantrip error: ${message}`);
     }
     return json;
   }
