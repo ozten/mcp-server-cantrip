@@ -18,55 +18,107 @@ The MCP server is a thin translation layer. It converts MCP tool calls into `{co
 npm install -g mcp-server-cantrip
 ```
 
-Or run directly:
+Or run directly (used by the configs below):
 
 ```bash
-npx mcp-server-cantrip
+npx -y mcp-server-cantrip
 ```
 
 ## Configuration
 
+### Claude Code (recommended: CLI one-liner)
+
+```bash
+claude mcp add cantrip -- npx -y mcp-server-cantrip
+```
+
+This registers the server in `~/.claude.json` with local scope. Verify with:
+
+```bash
+claude mcp list
+```
+
+Or check status inside Claude Code with the `/mcp` command.
+
+#### Claude Code (manual JSON)
+
+If you prefer editing config directly, add to `~/.claude.json`:
+
+```json
+{
+  "mcpServers": {
+    "cantrip": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "mcp-server-cantrip"]
+    }
+  }
+}
+```
+
+> **Important:** The `-y` flag is required. Without it, `npx` prompts for install confirmation which hangs because stdio is consumed by the MCP protocol.
+
+#### Claude Code (project-scoped, shared with team)
+
+Add a `.mcp.json` file to your project root:
+
+```json
+{
+  "mcpServers": {
+    "cantrip": {
+      "command": "npx",
+      "args": ["-y", "mcp-server-cantrip"]
+    }
+  }
+}
+```
+
 ### Claude Desktop
 
-Add to `~/.claude/claude_desktop_config.json`:
+**macOS:** Edit `~/Library/Application Support/Claude/claude_desktop_config.json`
+
+**Windows:** Edit `%APPDATA%\Claude\claude_desktop_config.json`
 
 ```json
 {
   "mcpServers": {
     "cantrip": {
       "command": "npx",
-      "args": ["mcp-server-cantrip"],
-      "env": {
-        "CANTRIP_API_KEY": "your-api-key"
-      }
+      "args": ["-y", "mcp-server-cantrip"]
     }
   }
 }
 ```
 
-### Claude Code
+### Cursor
 
-Add to `~/.claude/mcp.json` globally:
+Add to `.cursor/mcp.json` in your project or `~/.cursor/mcp.json` globally:
 
 ```json
 {
   "mcpServers": {
     "cantrip": {
       "command": "npx",
-      "args": ["mcp-server-cantrip"],
-      "env": {
-        "CANTRIP_API_KEY": "your-api-key"
-      }
+      "args": ["-y", "mcp-server-cantrip"]
     }
   }
 }
 ```
 
-### Environment Variables
+### Windows Note
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `CANTRIP_API_KEY` | *(none)* | Your Cantrip API key |
+On native Windows (not WSL), wrap the command with `cmd /c`:
+
+```json
+{
+  "mcpServers": {
+    "cantrip": {
+      "command": "cmd",
+      "args": ["/c", "npx", "-y", "mcp-server-cantrip"]
+    }
+  }
+}
+```
 
 ### Project Context (`.cantrip.json`)
 
@@ -81,6 +133,21 @@ Each project directory contains a `.cantrip.json` file that tells Cantrip which 
 This file is created automatically by `cantrip_init` (new project) or `cantrip_connect` (existing project). The agent manages it — you don't need to create it manually.
 
 **Multiple projects on the same machine?** Each project directory gets its own `.cantrip.json`. The agent switches context by working in the right directory.
+
+## Troubleshooting
+
+**Server not found / no tools appear:**
+- Run `claude mcp list` (Claude Code) or `/mcp` inside a session to check connection status.
+- Make sure the config is in the right file — Claude Code uses `~/.claude.json` or `.mcp.json`, **not** `~/.claude/mcp.json`.
+
+**Server hangs on startup:**
+- Ensure you have `-y` in the npx args. Without it, npx waits for interactive confirmation that can never arrive over stdio.
+
+**"Cannot reach Cantrip API" errors:**
+- Check that `https://api.cantrip.ai` is reachable from your network.
+
+**Windows "Connection closed" errors:**
+- Use `"command": "cmd"` with `"args": ["/c", "npx", "-y", "mcp-server-cantrip"]`.
 
 ## Tools (17)
 
