@@ -7,10 +7,10 @@ This server lets any MCP-compatible agent (Claude, Cursor, etc.) interact with C
 ## Architecture
 
 ```
-Agent (Claude, etc.) ── MCP protocol (stdio) ──> mcp-server-cantrip ── HTTP POST ──> cantrip daemon
+Agent (Claude, etc.) ── MCP protocol (stdio) ──> mcp-server-cantrip ── HTTPS POST ──> https://api.cantrip.ai
 ```
 
-The MCP server is a thin translation layer. It converts MCP tool calls into `{command, args, flags}` JSON envelopes and POSTs them to the cantrip daemon. Zero business logic — identical contract to the CLI and React UI.
+The MCP server is a thin translation layer. It converts MCP tool calls into `{command, args, flags}` JSON envelopes and POSTs them to the Cantrip API. Zero business logic — identical contract to the CLI and React UI.
 
 ## Installation
 
@@ -24,12 +24,17 @@ Or run directly (used by the configs below):
 npx -y mcp-server-cantrip
 ```
 
+## Getting Your API Key
+
+1. Sign up at [cantrip.ai](https://cantrip.ai)
+2. Get your API key at [dashboard.cantrip.ai/settings/api-keys](https://dashboard.cantrip.ai/settings/api-keys)
+
 ## Configuration
 
 ### Claude Code (recommended: CLI one-liner)
 
 ```bash
-claude mcp add cantrip -- npx -y mcp-server-cantrip
+claude mcp add cantrip -e CANTRIP_API_KEY=your-api-key -- npx -y mcp-server-cantrip
 ```
 
 This registers the server in `~/.claude.json` with local scope. Verify with:
@@ -50,7 +55,10 @@ If you prefer editing config directly, add to `~/.claude.json`:
     "cantrip": {
       "type": "stdio",
       "command": "npx",
-      "args": ["-y", "mcp-server-cantrip"]
+      "args": ["-y", "mcp-server-cantrip"],
+      "env": {
+        "CANTRIP_API_KEY": "your-api-key"
+      }
     }
   }
 }
@@ -67,11 +75,16 @@ Add a `.mcp.json` file to your project root:
   "mcpServers": {
     "cantrip": {
       "command": "npx",
-      "args": ["-y", "mcp-server-cantrip"]
+      "args": ["-y", "mcp-server-cantrip"],
+      "env": {
+        "CANTRIP_API_KEY": "${CANTRIP_API_KEY}"
+      }
     }
   }
 }
 ```
+
+This uses environment variable expansion so API keys stay out of version control. Each developer sets `CANTRIP_API_KEY` in their shell profile.
 
 ### Claude Desktop
 
@@ -84,7 +97,10 @@ Add a `.mcp.json` file to your project root:
   "mcpServers": {
     "cantrip": {
       "command": "npx",
-      "args": ["-y", "mcp-server-cantrip"]
+      "args": ["-y", "mcp-server-cantrip"],
+      "env": {
+        "CANTRIP_API_KEY": "your-api-key"
+      }
     }
   }
 }
@@ -99,7 +115,10 @@ Add to `.cursor/mcp.json` in your project or `~/.cursor/mcp.json` globally:
   "mcpServers": {
     "cantrip": {
       "command": "npx",
-      "args": ["-y", "mcp-server-cantrip"]
+      "args": ["-y", "mcp-server-cantrip"],
+      "env": {
+        "CANTRIP_API_KEY": "your-api-key"
+      }
     }
   }
 }
@@ -114,7 +133,10 @@ On native Windows (not WSL), wrap the command with `cmd /c`:
   "mcpServers": {
     "cantrip": {
       "command": "cmd",
-      "args": ["/c", "npx", "-y", "mcp-server-cantrip"]
+      "args": ["/c", "npx", "-y", "mcp-server-cantrip"],
+      "env": {
+        "CANTRIP_API_KEY": "your-api-key"
+      }
     }
   }
 }
@@ -144,6 +166,7 @@ This file is created automatically by `cantrip_init` (new project) or `cantrip_c
 - Ensure you have `-y` in the npx args. Without it, npx waits for interactive confirmation that can never arrive over stdio.
 
 **"Cannot reach Cantrip API" errors:**
+- Verify `CANTRIP_API_KEY` is set in the `env` block of your MCP config.
 - Check that `https://api.cantrip.ai` is reachable from your network.
 
 **Windows "Connection closed" errors:**
