@@ -11,6 +11,9 @@ const server = createCantripServer({
 async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
+  if (!process.env.CANTRIP_API_KEY) {
+    console.error("WARNING: CANTRIP_API_KEY is not set — authentication is disabled. Requests will be sent without credentials.");
+  }
   console.error("mcp-server-cantrip running");
 }
 
