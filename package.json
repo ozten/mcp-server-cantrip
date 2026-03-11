@@ -1,6 +1,6 @@
 {
   "name": "mcp-server-cantrip",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "mcpName": "io.github.ozten/cantrip",
   "description": "MCP server for Cantrip — AI-powered GTM engine for solo founders",
   "type": "module",
