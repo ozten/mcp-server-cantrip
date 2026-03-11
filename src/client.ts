@@ -29,6 +29,22 @@ export function readProjectContext(): string | null {
   }
 }
 
+/**
+ * Resolve project context: explicit slug wins, then .cantrip.json fallback.
+ * Throws a clear error if neither source provides a project.
+ */
+export function resolveProject(inlineSlug?: string): string {
+  if (inlineSlug) return inlineSlug;
+
+  const fromFile = readProjectContext();
+  if (fromFile) return fromFile;
+
+  throw new Error(
+    "No project context. Either pass the 'project' slug as a parameter, " +
+    "or run cantrip_connect first.",
+  );
+}
+
 export function writeProjectContext(project: string): void {
   writeFileSync(
     getConfigPath(),

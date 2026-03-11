@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { CantripClient, readProjectContext, writeProjectContext } from "./client.js";
+import { CantripClient, readProjectContext, resolveProject, writeProjectContext } from "./client.js";
 
 // ── Shared schemas ──────────────────────────────────────────────────
 
@@ -15,6 +15,13 @@ const ENTITY_TYPES = [
 
 const entityTypeSchema = z.enum(ENTITY_TYPES).describe(
   "Entity type: icp, pain_point, value_prop, experiment, channel, competitor, contact",
+);
+
+const PROJECT_DESC_SUFFIX =
+  " Pass `project` to override `.cantrip.json` — useful in cloud-hosted or multi-project contexts.";
+
+const projectSchema = z.string().optional().describe(
+  "Project slug — overrides .cantrip.json. Required in environments where cantrip_connect cannot write to the filesystem.",
 );
 
 function buildFlags(params: Record<string, unknown>): Record<string, string> {
@@ -237,66 +244,98 @@ export function createTools(client: CantripClient): ToolDef[] {
         "No args: project overview with entity counts by type and review state, gaps, and review queue size. " +
         "entity_type only: list all entities of that type (e.g. 'icps', 'pain-points', 'channels'). " +
         "entity_type + entity_id: show full detail for one entity. " +
-        "This is the primary tool for listing and inspecting entities.",
+        "This is the primary tool for listing and inspecting entities." +
+        PROJECT_DESC_SUFFIX,
       shape: {
         entity_type: z
           .string()
           .optional()
           .describe("Entity type to drill into (e.g. 'icps', 'pain-points', 'value-props')"),
         entity_id: z.string().optional().describe("Specific entity ID for detail view"),
+        project: projectSchema,
       },
       handler: async (p) => {
         let cmd = "snapshot";
         const args: string[] = [];
         if (p.entity_type) cmd += ` ${p.entity_type}`;
         if (p.entity_id) args.push(String(p.entity_id));
-        return client.post(cmd, args, {});
+        const project = resolveProject(p.project as string | undefined);
+        return client.post(cmd, args, { project });
       },
     },
 
     // ── Review ──
     {
       name: "cantrip_review",
-      description: "List all items pending review (inferred entities and open escalations)",
-      shape: {},
-      handler: async () => client.post("review", [], {}),
+      description:
+        "List all items pending review (inferred entities and open escalations)." +
+        PROJECT_DESC_SUFFIX,
+      shape: {
+        project: projectSchema,
+      },
+      handler: async (p) => {
+        const project = resolveProject(p.project as string | undefined);
+        return client.post("review", [], { project });
+      },
     },
     {
       name: "cantrip_review_accept",
-      description: "Accept an inferred entity, marking it as verified ground truth",
+      description:
+        "Accept an inferred entity, marking it as verified ground truth." +
+        PROJECT_DESC_SUFFIX,
       shape: {
         id: z.string().describe("Entity ID to accept"),
+        project: projectSchema,
       },
-      handler: async (p) => client.post("review accept", [String(p.id)], {}),
+      handler: async (p) => {
+        const project = resolveProject(p.project as string | undefined);
+        return client.post("review accept", [String(p.id)], { project });
+      },
     },
     {
       name: "cantrip_review_reject",
-      description: "Reject an inferred entity (soft-delete, kept for history)",
+      description:
+        "Reject an inferred entity (soft-delete, kept for history)." +
+        PROJECT_DESC_SUFFIX,
       shape: {
         id: z.string().describe("Entity ID to reject"),
+        project: projectSchema,
       },
-      handler: async (p) => client.post("review reject", [String(p.id)], {}),
+      handler: async (p) => {
+        const project = resolveProject(p.project as string | undefined);
+        return client.post("review reject", [String(p.id)], { project });
+      },
     },
     {
       name: "cantrip_review_resolve",
-      description: "Resolve an open escalation with a resolution message",
+      description:
+        "Resolve an open escalation with a resolution message." +
+        PROJECT_DESC_SUFFIX,
       shape: {
         id: z.string().describe("Escalation ID"),
         resolution: z.string().describe("Resolution text explaining the decision"),
+        project: projectSchema,
       },
-      handler: async (p) =>
-        client.post("review resolve", [String(p.id)], buildFlags({ resolution: p.resolution })),
+      handler: async (p) => {
+        const project = resolveProject(p.project as string | undefined);
+        return client.post("review resolve", [String(p.id)], { ...buildFlags({ resolution: p.resolution }), project });
+      },
     },
     {
       name: "cantrip_review_dismiss",
       description:
         "Dismiss an inferred entity or open escalation. " +
         "For entities: removes from review queue without accepting or rejecting (kept for history). " +
-        "For escalations: closes without resolving.",
+        "For escalations: closes without resolving." +
+        PROJECT_DESC_SUFFIX,
       shape: {
         id: z.string().describe("Entity or escalation ID to dismiss"),
+        project: projectSchema,
       },
-      handler: async (p) => client.post("review dismiss", [String(p.id)], {}),
+      handler: async (p) => {
+        const project = resolveProject(p.project as string | undefined);
+        return client.post("review dismiss", [String(p.id)], { project });
+      },
     },
 
     // ── Next ──
@@ -306,19 +345,30 @@ export function createTools(client: CantripClient): ToolDef[] {
         "List gap-analysis opportunities — things that would move the project closer to ideal state. " +
         "Each opportunity has a stable UUID that you can pass to cantrip_next_prompt or cantrip_next_run. " +
         "Opportunities persist across calls; re-running gap analysis updates existing opportunities rather than replacing them. " +
-        "Review the project snapshot with the user before running opportunities.",
-      shape: {},
-      handler: async () => client.post("next", [], {}),
+        "Review the project snapshot with the user before running opportunities." +
+        PROJECT_DESC_SUFFIX,
+      shape: {
+        project: projectSchema,
+      },
+      handler: async (p) => {
+        const project = resolveProject(p.project as string | undefined);
+        return client.post("next", [], { project });
+      },
     },
     {
       name: "cantrip_next_prompt",
       description:
         "Generate a context-rich LLM prompt for an opportunity. " +
-        "Returns a ready-to-use prompt with all relevant ontology context baked in. Zero credit cost.",
+        "Returns a ready-to-use prompt with all relevant ontology context baked in. Zero credit cost." +
+        PROJECT_DESC_SUFFIX,
       shape: {
         id: z.string().describe("Opportunity ID from cantrip_next"),
+        project: projectSchema,
       },
-      handler: async (p) => client.post("next prompt", [String(p.id)], {}),
+      handler: async (p) => {
+        const project = resolveProject(p.project as string | undefined);
+        return client.post("next prompt", [String(p.id)], { project });
+      },
     },
     {
       name: "cantrip_next_run",
@@ -327,17 +377,24 @@ export function createTools(client: CantripClient): ToolDef[] {
         "either updating existing entities' missing fields (targeted) or generating new entities (bulk). " +
         "Returns when complete with a summary of what was created or updated. " +
         "Parallelism: you may run different loop types concurrently (e.g. enrich ICPs + enrich competitors), " +
-        "but the daemon blocks concurrent runs of the same loop type for safety.",
+        "but the daemon blocks concurrent runs of the same loop type for safety." +
+        PROJECT_DESC_SUFFIX,
       shape: {
         id: z.string().describe("Opportunity ID from cantrip_next"),
+        project: projectSchema,
       },
-      handler: async (p) => client.post("next run", [String(p.id)], {}),
+      handler: async (p) => {
+        const project = resolveProject(p.project as string | undefined);
+        return client.post("next run", [String(p.id)], { project });
+      },
     },
 
     // ── History ──
     {
       name: "cantrip_history",
-      description: "Query the append-only audit trail of all actions taken on the project",
+      description:
+        "Query the append-only audit trail of all actions taken on the project." +
+        PROJECT_DESC_SUFFIX,
       shape: {
         type: z
           .string()
@@ -346,27 +403,41 @@ export function createTools(client: CantripClient): ToolDef[] {
         entity: z.string().optional().describe("Filter by entity type (e.g. icp, pain_point)"),
         since: z.string().optional().describe("Only events after this ISO date"),
         limit: z.number().optional().describe("Max events to return (default: 50)"),
+        project: projectSchema,
       },
-      handler: async (p) =>
-        client.post("history", [], buildFlags({ type: p.type, entity: p.entity, since: p.since, limit: p.limit })),
+      handler: async (p) => {
+        const project = resolveProject(p.project as string | undefined);
+        return client.post("history", [], { ...buildFlags({ type: p.type, entity: p.entity, since: p.since, limit: p.limit }), project });
+      },
     },
 
     // ── Meter ──
     {
       name: "cantrip_meter_balance",
       description:
-        "Check remaining credits. Returns available credits, reserved credits (held by in-progress operations), and total balance.",
-      shape: {},
-      handler: async () => client.post("meter", ["balance"], {}),
+        "Check remaining credits. Returns available credits, reserved credits (held by in-progress operations), and total balance." +
+        PROJECT_DESC_SUFFIX,
+      shape: {
+        project: projectSchema,
+      },
+      handler: async (p) => {
+        const project = resolveProject(p.project as string | undefined);
+        return client.post("meter", ["balance"], { project });
+      },
     },
     {
       name: "cantrip_meter_history",
       description:
-        "View recent credit transactions. Shows usage debits, purchases, and running balance.",
+        "View recent credit transactions. Shows usage debits, purchases, and running balance." +
+        PROJECT_DESC_SUFFIX,
       shape: {
         limit: z.number().optional().describe("Maximum entries to return (default: 20)"),
+        project: projectSchema,
       },
-      handler: async (p) => client.post("meter", ["history"], buildFlags({ limit: p.limit })),
+      handler: async (p) => {
+        const project = resolveProject(p.project as string | undefined);
+        return client.post("meter", ["history"], { ...buildFlags({ limit: p.limit }), project });
+      },
     },
     {
       name: "cantrip_meter_tiers",
@@ -390,7 +461,8 @@ export function createTools(client: CantripClient): ToolDef[] {
         "- competitor: name, description, url, positioning, strengths, weaknesses, pricing_model\n" +
         "- contact: name, email, phone, company, role, source, url, notes\n" +
         "Extra fields (any field not in the schema above) are stored in extensions. " +
-        "After adding entities, pause and confirm with the user before adding more.",
+        "After adding entities, pause and confirm with the user before adding more." +
+        PROJECT_DESC_SUFFIX,
       shape: {
         entity_type: entityTypeSchema,
         name: z.string().optional().describe("Entity name (mapped to 'framing' for value_prop, 'title' for experiment)"),
@@ -399,6 +471,7 @@ export function createTools(client: CantripClient): ToolDef[] {
           .record(z.string())
           .optional()
           .describe("Additional fields as key-value pairs (e.g. {severity: 'high', frequency: 'constant'})"),
+        project: projectSchema,
       },
       handler: async (p) => {
         const flags: Record<string, string> = {};
@@ -409,6 +482,7 @@ export function createTools(client: CantripClient): ToolDef[] {
             flags[k] = v;
           }
         }
+        flags.project = resolveProject(p.project as string | undefined);
         return client.post(String(p.entity_type), ["add"], flags);
       },
     },
@@ -417,7 +491,8 @@ export function createTools(client: CantripClient): ToolDef[] {
       description:
         "Edit an existing entity. Fields vary by type (same as cantrip_entity_add). " +
         "Pass well-known fields directly, and any additional fields in the 'fields' object. " +
-        "Extra fields are stored in extensions.",
+        "Extra fields are stored in extensions." +
+        PROJECT_DESC_SUFFIX,
       shape: {
         entity_type: entityTypeSchema,
         id: z.string().describe("Entity ID to edit"),
@@ -427,6 +502,7 @@ export function createTools(client: CantripClient): ToolDef[] {
           .record(z.string())
           .optional()
           .describe("Additional fields to update as key-value pairs"),
+        project: projectSchema,
       },
       handler: async (p) => {
         const flags: Record<string, string> = {};
@@ -437,6 +513,7 @@ export function createTools(client: CantripClient): ToolDef[] {
             flags[k] = v;
           }
         }
+        flags.project = resolveProject(p.project as string | undefined);
         return client.post(String(p.entity_type), ["edit", String(p.id)], flags);
       },
     },
