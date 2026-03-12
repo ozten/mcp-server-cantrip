@@ -1,96 +1,41 @@
 # mcp-server-cantrip
 
-MCP (Model Context Protocol) server for [Cantrip](https://cantrip.ai) — the AI-powered GTM engine for solo founders.
+Cantrip helps technical founders find their first customers with structured GTM workflows.
 
-This server lets any MCP-compatible agent (Claude, Cursor, etc.) interact with Cantrip's project management, gap analysis, and entity CRUD through the standard MCP tool protocol.
+- **Nail your ICP** — define ideal customer profiles, buyer pains, and value props
+- **Research competitors** — map the landscape and find where you can win
+- **Get next actions** — gap analysis tells you exactly what to work on, then does it for you
 
-## Architecture
+Works with **Claude Code** / **Claude Desktop** / **Cursor** — any MCP-compatible agent.
 
-```
-Agent (Claude, etc.) ── MCP protocol (stdio) ──> mcp-server-cantrip ── HTTPS POST ──> https://api.cantrip.ai
-```
+### Quick start
 
-The MCP server is a thin translation layer. It converts MCP tool calls into `{command, args, flags}` JSON envelopes and POSTs them to the Cantrip API. Zero business logic — identical contract to the CLI and React UI.
-
-## Installation
-
-```bash
-npm install -g mcp-server-cantrip
-```
-
-Or run directly (used by the configs below):
-
-```bash
-npx -y mcp-server-cantrip
-```
-
-## Getting Your API Key
-
-1. Sign up at [cantrip.ai](https://cantrip.ai)
-2. Get your API key at [dashboard.cantrip.ai/settings/api-keys](https://dashboard.cantrip.ai/settings/api-keys)
-
-## Configuration
-
-### Claude Code (recommended: CLI one-liner)
+1. Get your API key at [cantrip.ai](https://cantrip.ai) ([settings](https://dashboard.cantrip.ai/settings/api-keys))
+2. Add the server:
 
 ```bash
 claude mcp add cantrip -e CANTRIP_API_KEY=your-api-key -- npx -y mcp-server-cantrip
 ```
 
-This registers the server in `~/.claude.json` with local scope. Verify with:
+3. Try this prompt:
 
-```bash
-claude mcp list
-```
+> "Initialize a Cantrip project for my product: [describe yours in one sentence]"
 
-Or check status inside Claude Code with the `/mcp` command.
+## Configuration
 
-#### Claude Code (manual JSON)
+The Quick start command above covers Claude Code. Verify it worked with `claude mcp list` or the `/mcp` command inside a session.
 
-If you prefer editing config directly, add to `~/.claude.json`:
+### Claude Desktop / Cursor / manual JSON
 
-```json
-{
-  "mcpServers": {
-    "cantrip": {
-      "type": "stdio",
-      "command": "npx",
-      "args": ["-y", "mcp-server-cantrip"],
-      "env": {
-        "CANTRIP_API_KEY": "your-api-key"
-      }
-    }
-  }
-}
-```
+All MCP clients use the same JSON block. Add it to the appropriate config file:
 
-> **Important:** The `-y` flag is required. Without it, `npx` prompts for install confirmation which hangs because stdio is consumed by the MCP protocol.
-
-#### Claude Code (project-scoped, shared with team)
-
-Add a `.mcp.json` file to your project root:
-
-```json
-{
-  "mcpServers": {
-    "cantrip": {
-      "command": "npx",
-      "args": ["-y", "mcp-server-cantrip"],
-      "env": {
-        "CANTRIP_API_KEY": "${CANTRIP_API_KEY}"
-      }
-    }
-  }
-}
-```
-
-This uses environment variable expansion so API keys stay out of version control. Each developer sets `CANTRIP_API_KEY` in their shell profile.
-
-### Claude Desktop
-
-**macOS:** Edit `~/Library/Application Support/Claude/claude_desktop_config.json`
-
-**Windows:** Edit `%APPDATA%\Claude\claude_desktop_config.json`
+| Client | Config file |
+|--------|-------------|
+| Claude Code (manual) | `~/.claude.json` |
+| Claude Code (project-scoped) | `.mcp.json` in project root |
+| Claude Desktop (macOS) | `~/Library/Application Support/Claude/claude_desktop_config.json` |
+| Claude Desktop (Windows) | `%APPDATA%\Claude\claude_desktop_config.json` |
+| Cursor | `.cursor/mcp.json` (project) or `~/.cursor/mcp.json` (global) |
 
 ```json
 {
@@ -106,41 +51,11 @@ This uses environment variable expansion so API keys stay out of version control
 }
 ```
 
-### Cursor
+> **Note:** The `-y` flag is required — without it, `npx` prompts for confirmation which hangs over stdio.
 
-Add to `.cursor/mcp.json` in your project or `~/.cursor/mcp.json` globally:
+> **Windows (not WSL):** Use `"command": "cmd"` with `"args": ["/c", "npx", "-y", "mcp-server-cantrip"]`.
 
-```json
-{
-  "mcpServers": {
-    "cantrip": {
-      "command": "npx",
-      "args": ["-y", "mcp-server-cantrip"],
-      "env": {
-        "CANTRIP_API_KEY": "your-api-key"
-      }
-    }
-  }
-}
-```
-
-### Windows Note
-
-On native Windows (not WSL), wrap the command with `cmd /c`:
-
-```json
-{
-  "mcpServers": {
-    "cantrip": {
-      "command": "cmd",
-      "args": ["/c", "npx", "-y", "mcp-server-cantrip"],
-      "env": {
-        "CANTRIP_API_KEY": "your-api-key"
-      }
-    }
-  }
-}
-```
+> **Project-scoped with teams:** Use `"${CANTRIP_API_KEY}"` in the env value so each developer sets the key in their shell profile.
 
 ### Project Context (`.cantrip.json`)
 
@@ -155,6 +70,15 @@ Each project directory contains a `.cantrip.json` file that tells Cantrip which 
 This file is created automatically by `cantrip_init` (new project) or `cantrip_connect` (existing project). The agent manages it — you don't need to create it manually.
 
 **Multiple projects on the same machine?** Each project directory gets its own `.cantrip.json`. The agent switches context by working in the right directory.
+
+## Examples of How to use Cantrip
+
+After connecting Cantrip, try these prompts in order:
+
+1. "Initialize a Cantrip project for my product: **[one sentence about what you're building]**"
+2. "Find my likely ICP and top 3 buyer pains."
+3. "Research 5 competitors and tell me where I can win."
+4. "Give me a one-week GTM plan."
 
 ## Troubleshooting
 
@@ -171,6 +95,14 @@ This file is created automatically by `cantrip_init` (new project) or `cantrip_c
 
 **Windows "Connection closed" errors:**
 - Use `"command": "cmd"` with `"args": ["/c", "npx", "-y", "mcp-server-cantrip"]`.
+
+## Architecture
+
+```
+Agent (Claude, etc.) ── MCP protocol (stdio) ──> mcp-server-cantrip ── HTTPS POST ──> https://api.cantrip.ai
+```
+
+The MCP server is a thin translation layer. It converts MCP tool calls into `{command, args, flags}` JSON envelopes and POSTs them to the Cantrip API. Zero business logic — identical contract to the CLI and React UI.
 
 ## Tools (17)
 
