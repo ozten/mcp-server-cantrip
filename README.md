@@ -4,6 +4,10 @@ MCP (Model Context Protocol) server for [Cantrip](https://cantrip.ai) — the AI
 
 This server lets any MCP-compatible agent (Claude, Cursor, etc.) interact with Cantrip's project management, gap analysis, and entity CRUD through the standard MCP tool protocol.
 
+<a href="https://glama.ai/mcp/servers/ozten/mcp-server-cantrip">
+  <img width="380" height="200" src="https://glama.ai/mcp/servers/ozten/mcp-server-cantrip/badge" alt="Cantrip MCP server" />
+</a>
+
 ## Architecture
 
 ```
