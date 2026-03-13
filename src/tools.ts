@@ -307,6 +307,32 @@ export function createTools(client: CantripClient): ToolDef[] {
       },
     },
     {
+      name: "cantrip_review_accept_all",
+      description:
+        "Accept all inferred entities at once, marking them as verified ground truth." +
+        PROJECT_DESC_SUFFIX,
+      shape: {
+        project: projectSchema,
+      },
+      handler: async (p) => {
+        const project = resolveProject(p.project as string | undefined);
+        return client.post("review accept-all", [], { project });
+      },
+    },
+    {
+      name: "cantrip_review_reject_all",
+      description:
+        "Reject all inferred entities at once (soft-delete, kept for history)." +
+        PROJECT_DESC_SUFFIX,
+      shape: {
+        project: projectSchema,
+      },
+      handler: async (p) => {
+        const project = resolveProject(p.project as string | undefined);
+        return client.post("review reject-all", [], { project });
+      },
+    },
+    {
       name: "cantrip_review_resolve",
       description:
         "Resolve an open escalation with a resolution message." +
