@@ -543,5 +543,20 @@ export function createTools(client: CantripClient): ToolDef[] {
         return client.post(String(p.entity_type), ["edit", String(p.id)], flags);
       },
     },
+    {
+      name: "cantrip_entity_delete",
+      description:
+        "Delete an existing entity by type and ID." +
+        PROJECT_DESC_SUFFIX,
+      shape: {
+        entity_type: entityTypeSchema,
+        id: z.string().describe("Entity ID to delete"),
+        project: projectSchema,
+      },
+      handler: async (p) => {
+        const project = resolveProject(p.project as string | undefined);
+        return client.post(String(p.entity_type), ["delete", String(p.id)], { project });
+      },
+    },
   ];
 }
